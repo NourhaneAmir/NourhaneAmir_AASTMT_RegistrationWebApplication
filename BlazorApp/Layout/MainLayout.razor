@@ -1,0 +1,33 @@
+﻿@inherits LayoutComponentBase
+@inject AuthState AuthState
+@inject NavigationManager NavigationManager
+<div class="page">
+    @* <div class="sidebar">
+        <NavMenu />
+    </div> *@
+
+    <main>
+        <nav class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center h-16">
+                    <img src="logo-blue03.png" alt="Logo" class="h-8 w-auto" />
+                    <div class="flex-shrink-0 ms-4">
+                        <h1 class="text-xl font-bold text-gray-900">Online Registration</h1>
+                        <h4 class="text-md font-bold text-gray-600">AASTMT Students</h4>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class=" bg-blue-50">
+            @Body
+        </div>
+    </main>
+</div>
+<Toast />
+@code {
+    private void Logout()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}

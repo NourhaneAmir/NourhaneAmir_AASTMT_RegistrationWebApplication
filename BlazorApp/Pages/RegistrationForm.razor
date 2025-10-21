@@ -1,0 +1,396 @@
+﻿@using BlazorApp.Services
+@using StudentRegistration.Shared.Models
+@inject AuthState AuthState
+@inject ICourseService CourseService
+@inject IRegistrationService RegistrationService
+@inject ToastService ToastService
+
+<div class="max-w-7xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="bg-white rounded-xl p-6 shadow-lg">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-3xl font-bold text-gray-900">Course Registration</h2>
+            <button @onclick="GoBackToMenu" 
+                    class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Menu
+            </button>
+        </div>
+
+        <!-- Registration Info -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div class="bg-blue-50 p-3 rounded-lg">
+                <span class="font-semibold text-blue-800">Student:</span> @AuthState.CurrentStudent?.FullName
+            </div>
+            <div class="bg-blue-50 p-3 rounded-lg">
+                <span class="font-semibold text-blue-800">Department:</span> @AuthState.CurrentStudent?.Department
+            </div>
+            <div class="bg-blue-50 p-3 rounded-lg">
+                <span class="font-semibold text-blue-800">Current Credits:</span> 
+                <span class="@(totalCreditHours > 18 ? "text-red-600 font-bold" : "text-green-600")">
+                    @totalCreditHours/18
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="bg-white rounded-xl p-6 shadow-lg">
+        <div class="block mb-4 text-lg font-semibold text-gray-900">Select the course and class you want to Register</div>
+
+        <div class="flex flex-col md:flex-row gap-4 items-end">
+            <div class="flex-1">
+                <label for="Courses" class="block mb-2 text-sm font-medium text-gray-700">Select Course</label>
+                <select @bind="selectedCourseId"
+                        id="Courses"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+               focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                        disabled="@isLoadingCourses">
+                    <option value="0">Select Course</option>
+                    @if (availableCourses != null)
+                    {
+                        @foreach (var course in availableCourses)
+                        {
+                            <option value="@course.CourseId">
+                                @course.FullCourseCode - @course.CourseName (@course.CreditHours credits)
+                            </option>
+                        }
+                    }
+                </select>
+
+            </div>
+
+            <div class="flex-1">
+                <label for="Classes" class="block mb-2 text-sm font-medium text-gray-700">Select Class</label>
+                <select @bind="selectedClassId" 
+                        id="Classes" 
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                        disabled="@(selectedCourseId == 0 || isLoadingClasses)">
+                    <option value="0">Select Class</option>
+                    @if (availableClasses != null)
+                    {
+                        @foreach (var classItem in availableClasses)
+                        {
+                            <option value="@classItem.ClassId">
+                                @GetClassDisplayText(classItem)
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div>
+                <button @onclick="AddClass" 
+                        type="button" 
+                        disabled="@(selectedClassId == 0 || isAddingClass)"
+                        class="text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center disabled:bg-blue-400 disabled:cursor-not-allowed transition duration-200">
+                    @if (isAddingClass)
+                    {
+                        <div class="flex items-center">
+                            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Adding...
+                        </div>
+                    }
+                    else
+                    {
+                        <span>ADD</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        @if (isLoadingCourses)
+        {
+            <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                <div class="flex items-center text-blue-700">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    Loading available courses...
+                </div>
+            </div>
+        }
+
+        @if (isLoadingClasses && selectedCourseId > 0)
+        {
+            <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                <div class="flex items-center text-blue-700">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    Loading available classes...
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="bg-white rounded-xl p-6 shadow-lg">
+        <h3 class="text-xl font-semibold text-gray-900 mb-4">Registered Courses</h3>
+        
+        @if (registeredClasses?.Any() == true)
+        {
+            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Course Code</th>
+                            <th scope="col" class="px-6 py-3">Course Name</th>
+                            <th scope="col" class="px-6 py-3">Credit Hours</th>
+                            <th scope="col" class="px-6 py-3">Schedule</th>
+                            <th scope="col" class="px-6 py-3">Instructor</th>
+                            <th scope="col" class="px-6 py-3">Classroom</th>
+                            <th scope="col" class="px-6 py-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var classItem in registeredClasses)
+                        {
+                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50">
+                                <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                                    @classItem.Course?.FullCourseCode
+                                </td>
+                                <td class="px-6 py-4">
+                                    @classItem.Course?.CourseName
+                                </td>
+                                <td class="px-6 py-4">
+                                    @classItem.Course?.CreditHours
+                                </td>
+                                <td class="px-6 py-4">
+                                    @GetScheduleDisplay(classItem)
+                                </td>
+                                <td class="px-6 py-4">
+                                    @classItem.Instructor?.InstructorName
+                                </td>
+                                <td class="px-6 py-4">
+                                    @classItem.Classroom
+                                </td>
+                                <td class="px-6 py-4">
+                                    <button @onclick="() => DropClass(classItem.ClassId)" 
+                                            class="font-medium text-red-600 hover:text-red-800 transition duration-200">
+                                        Drop
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-8 bg-gray-50 rounded-lg">
+                <p class="text-gray-600">No courses registered yet.</p>
+                <p class="text-sm text-gray-500 mt-2">Select courses from above to build your schedule.</p>
+            </div>
+        }
+    </div>
+
+    <div class="bg-white rounded-xl p-6 shadow-lg">
+        <h3 class="text-xl font-semibold text-gray-900 mb-4">Weekly Schedule</h3>
+        <ScheduleView Classes="registeredClasses" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback OnBackToMenu { get; set; }
+
+    private List<Course>? availableCourses;
+    private List<Class>? availableClasses;
+    private List<Class>? registeredClasses;
+    private int _selectedCourseId;
+    private int selectedCourseId
+    {
+        get => _selectedCourseId;
+        set
+        {
+            if (_selectedCourseId != value)
+            {
+                _selectedCourseId = value;
+                _ = OnCourseSelected(value); 
+            }
+        }
+    }
+    private int selectedClassId = 0;
+    private int totalCreditHours = 0;
+    
+    private bool isLoadingCourses = true;
+    private bool isLoadingClasses = false;
+    private bool isAddingClass = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAvailableCourses();
+        await LoadRegisteredClasses();
+    }
+
+    private async Task LoadAvailableCourses()
+    {
+        if (AuthState.CurrentStudent == null) return;
+
+        try
+        {
+            isLoadingCourses = true;
+            availableCourses = await CourseService.GetEligibleCoursesForStudentAsync(
+                AuthState.CurrentStudent.RegistrationNumber);
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Failed to load available courses.");
+            Console.WriteLine($"Error loading courses: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingCourses = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadAvailableClasses(int courseId)
+    {
+        if (courseId == 0) return;
+
+        try
+        {
+            isLoadingClasses = true;
+            availableClasses = await CourseService.GetAvailableClassesByCourseAsync(courseId);
+            selectedClassId = 0; // Reset class selection
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Failed to load available classes.");
+            Console.WriteLine($"Error loading classes: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingClasses = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadRegisteredClasses()
+    {
+        if (AuthState.CurrentStudent == null) return;
+
+        try
+        {
+            registeredClasses = await RegistrationService.GetRegisteredClassesAsync(
+                AuthState.CurrentStudent.RegistrationNumber);
+            
+            CalculateTotalCreditHours();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Failed to load registered classes.");
+            Console.WriteLine($"Error loading registered classes: {ex.Message}");
+        }
+    }
+
+    private async Task OnCourseSelected(int courseId)
+    {
+        if (courseId > 0)
+            await LoadAvailableClasses(courseId);
+        else
+        {
+            availableClasses = null;
+            selectedClassId = 0;
+            StateHasChanged();
+        }
+    }
+    private async Task AddClass()
+    {
+        if (selectedClassId == 0 || AuthState.CurrentStudent == null) return;
+
+        try
+        {
+            isAddingClass = true;
+            StateHasChanged();
+
+            var result = await RegistrationService.RegisterForClassAsync(
+                AuthState.CurrentStudent.RegistrationNumber, selectedClassId);
+
+            if (result.Success)
+            {
+                ToastService.ShowSuccess("Course added successfully!");
+                
+                // Refresh data
+                await LoadRegisteredClasses();
+                await LoadAvailableCourses(); // Refresh in case capacity changed
+                
+                // Reset selections
+                selectedCourseId = 0;
+                selectedClassId = 0;
+                availableClasses = null;
+            }
+            else
+            {
+                ToastService.ShowError(result.Message ?? "Failed to add course.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("An error occurred while adding the course.");
+            Console.WriteLine($"Error adding class: {ex.Message}");
+        }
+        finally
+        {
+            isAddingClass = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DropClass(int classId)
+    {
+        if (AuthState.CurrentStudent == null) return;
+
+        try
+        {
+            var result = await RegistrationService.DropClassAsync(
+                AuthState.CurrentStudent.RegistrationNumber, classId);
+
+            if (result.Success)
+            {
+                ToastService.ShowSuccess("Course dropped successfully!");
+                
+                // Refresh data
+                await LoadRegisteredClasses();
+                await LoadAvailableCourses(); // Refresh available courses
+                
+                if (selectedCourseId > 0)
+                {
+                    await LoadAvailableClasses(selectedCourseId); // Refresh available classes
+                }
+            }
+            else
+            {
+                ToastService.ShowError(result.Message ?? "Failed to drop course.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("An error occurred while dropping the course.");
+            Console.WriteLine($"Error dropping class: {ex.Message}");
+        }
+    }
+
+    private void CalculateTotalCreditHours()
+    {
+        totalCreditHours = registeredClasses?.Sum(c => c.Course?.CreditHours ?? 0) ?? 0;
+    }
+
+    private string GetClassDisplayText(Class classItem)
+    {
+        var days = classItem.DaysOfWeek;
+        var time = $"{classItem.StartTime:hh\\:mm} - {classItem.EndTime:hh\\:mm}";
+        var seats = $"{classItem.RemainingSeats}/{classItem.Capacity} seats";
+        var instructor = classItem.Instructor?.InstructorName.Split(' ')[0] ?? "Staff";
+        
+        return $"{days} {time} ({seats}) - {instructor}";
+    }
+
+    private string GetScheduleDisplay(Class classItem)
+    {
+        return $"{classItem.DaysOfWeek} {classItem.StartTime:hh\\:mm} - {classItem.EndTime:hh\\:mm}";
+    }
+
+    private async Task GoBackToMenu()
+    {
+        await OnBackToMenu.InvokeAsync();
+    }
+}

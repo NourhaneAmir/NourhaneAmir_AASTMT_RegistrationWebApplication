@@ -1,0 +1,162 @@
+﻿@page "/Home"
+@page "/Menu"
+@using BlazorApp.Services
+@using StudentRegistration.Shared.Models
+@inject AuthState AuthState
+@inject IStudentService StudentService
+@inject IAuthService AuthService
+@inject ToastService ToastService
+@inject NavigationManager Navigation
+
+<div class="grid grid-cols-5 min-h-screen">
+    
+    <div class="bg-white top-0 start-0">
+        @if (AuthState.IsAuthenticated && currentStudent != null)
+        {
+            <SideBar Student="currentStudent" CurrentSemester="currentSemester" />
+        }
+    </div>
+
+    
+    <div class="col-span-4 bg-gray-50 p-6">
+        @if (isLoading)
+        {
+            <div class="flex items-center justify-center h-64">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        }
+        else if (!AuthState.IsAuthenticated)
+        {
+            <div class="text-center py-12">
+                <h2 class="text-2xl font-bold text-gray-700 mb-4">Please log in to access the dashboard</h2>
+                <a href="/" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg">
+                    Go to Login
+                </a>
+            </div>
+        }
+        else if (currentStudent == null)
+        {
+            <div class="text-center py-12">
+                <h2 class="text-2xl font-bold text-gray-700 mb-4">Unable to load student data</h2>
+                <button @onclick="LoadDashboardData" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg">
+                    Retry
+                </button>
+            </div>
+        }
+        else
+        {
+            @if (showRegistration)
+            {
+                <RegistrationForm OnBackToMenu="SwitchToMenu" />
+            }
+            else
+            {
+                <MenuPage OnRegistrationClick="CheckRegistrationConditions"
+                          IsRegistrationEnabled="true"
+                          RegistrationMessage="registrationMessage" />
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private Student? currentStudent;
+    private Semester? currentSemester;
+    private bool isLoading = true;
+    private bool showRegistration = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        Console.WriteLine($"Home: Loading dashboard - IsAuthenticated: {AuthState.IsAuthenticated}");
+
+        if (AuthState.IsAuthenticated)
+        {
+            currentStudent = AuthState.CurrentStudent;
+            currentSemester = AuthState.CurrentSemester;
+
+            Console.WriteLine($"Home: Student from AuthState - {currentStudent?.FullName}");
+            Console.WriteLine($"Home: Semester from AuthState - {currentSemester?.FullSemesterName}");
+
+            if (currentStudent != null)
+            {
+                try
+                {
+                    var freshStudent = await StudentService.GetStudentAsync(currentStudent.RegistrationNumber);
+                    if (freshStudent != null)
+                    {
+                        currentStudent = freshStudent;
+                        await AuthState.SetStudentAsync(currentStudent);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Home: Error fetching fresh student data: {ex.Message}");
+
+                }
+            }
+            showRegistration = false;
+        }
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task CheckRegistrationConditions()
+    {
+        if (currentStudent == null)
+        {
+            ToastService.ShowError("Unable to load student information.");
+            return;
+        }
+
+        try
+        {
+            Console.WriteLine("Home: Checking registration conditions...");
+
+            var canStudentRegister = await StudentService.CanStudentRegisterAsync(currentStudent.RegistrationNumber);
+            Console.WriteLine($"Home: Student can register: {canStudentRegister}");
+
+            if (!canStudentRegister)
+            {
+                ToastService.ShowWarning("Your student status does not allow registration at this time.");
+                Console.WriteLine("Home: Student cannot register - status issue");
+                return;
+            }
+
+            var isRegistrationOpen = await AuthService.IsRegistrationOpenAsync();
+            Console.WriteLine($"Home: Registration open: {isRegistrationOpen}");
+
+            if (!isRegistrationOpen)
+            {
+                ToastService.ShowWarning("Registration period has ended for the current semester."); 
+                Console.WriteLine("Home: Registration period closed");
+                return;
+            }
+
+            Console.WriteLine("Home: All conditions met, showing registration form");
+            showRegistration = true;
+            StateHasChanged();
+            await Task.Delay(10);
+            StateHasChanged();
+           
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Unable to check registration status. Please try again.");
+            Console.WriteLine($"Home: Registration check error - {ex.Message}");
+        }
+    }
+
+    private void SwitchToMenu()
+    {
+        showRegistration = false;
+        StateHasChanged();
+    }
+   
+
+}

@@ -1,0 +1,125 @@
+﻿@using System.Globalization
+@using StudentRegistration.Shared.Models
+
+<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+    <table class="w-full text-sm text-left text-gray-500">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+            <tr>
+                <th scope="col" class="px-4 py-3 border-r bg-blue-50"></th>
+                @foreach (var timeSlot in timeSlots)
+                {
+                    <th scope="col" class="px-4 py-3 text-center min-w-20">@timeSlot</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var day in daysOfWeek)
+            {
+                <tr class="bg-white border-b border-gray-200">
+                    <th scope="row" class="px-4 py-4 font-medium text-gray-900 whitespace-nowrap bg-blue-50 border-r">
+                        @day
+                    </th>
+
+                    @{
+                        int i = 0;
+                        while (i < timeSlots.Length)
+                        {
+                            var timeSlot = timeSlots[i];
+                            var classForSlot = GetScheduledClass(day, timeSlot);
+
+                            if (classForSlot != null)
+                            {
+                                var (startHour, endHour) = ParseTimeSlot($"{classForSlot.StartTime.Hours}-{classForSlot.EndTime.Hours}");
+                                int colspan = Math.Max(1, endHour - startHour);
+
+                                <td colspan="@colspan" class="px-4 py-4 border bg-blue-100">
+                                    <div class=" p-1 text-xs">
+                                        <div class="font-semibold text-blue-800">@classForSlot.Course?.FullCourseCode</div>
+                                        <div class="text-blue-600">@classForSlot.Classroom</div>
+                                        <div class="text-blue-500">@GetInstructorShortName(classForSlot.Instructor?.InstructorName)</div>
+                                    </div>
+                                </td>
+
+                                i += colspan;
+                                if (i >= timeSlots.Length)
+                                    break;
+                            }
+                            else
+                            {
+                                <td class="px-4 py-4 border"></td>
+                                i++;
+                            }
+                        }
+                    }
+                </tr>
+            }
+        </tbody>
+
+    </table>
+</div>
+
+@code {
+    [Parameter]
+    public List<Class>? Classes { get; set; }
+
+    private readonly string[] daysOfWeek = { "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday" };
+    private readonly string[] timeSlots = { "8-9", "9-10", "10-11", "11-12", "12-13", "13-14", "14-15", "15-16", "16-17", "17-18", "18-19", "19-20" };
+
+    private RenderFragment GetClassForTimeSlot(string day, string timeSlot) => @<text>
+@{
+    var classForSlot = GetScheduledClass(day, timeSlot);
+    if (classForSlot != null)
+    {
+    <div class="bg-blue-100 border-blue-300 p-2 text-xs">
+        <div class="font-semibold text-blue-800">@classForSlot.Course?.FullCourseCode</div>
+        <div class="text-blue-600">@classForSlot.Classroom</div>
+        <div class="text-blue-500">@classForSlot.Instructor?.InstructorName.Split(' ')[1]</div>
+    </div>
+    }
+    }
+</text>;
+private string GetInstructorShortName(string? fullName)
+{
+    if (string.IsNullOrWhiteSpace(fullName)) return "Staff";
+    var parts = fullName.Split(' ');
+    return parts.Length > 1 ? parts[^1] : parts[0];
+}
+
+private Class? GetScheduledClass(string day, string timeSlot)
+{
+    if (Classes == null) return null;
+
+    var dayAbbreviation = GetDayAbbreviation(day);
+    var (startHour, endHour) = ParseTimeSlot(timeSlot);
+
+    return Classes.FirstOrDefault(c =>
+        c.DaysOfWeek.Contains(dayAbbreviation) &&
+        c.StartTime.Hours == startHour);
+}
+
+private string GetDayAbbreviation(string day)
+{
+    return day switch
+    {
+        "Saturday" => "S",
+        "Sunday" => "U",
+        "Monday" => "M",
+        "Tuesday" => "T",
+        "Wednesday" => "W",
+        "Thursday" => "R",
+        _ => ""
+    };
+}
+
+private (int startHour, int endHour) ParseTimeSlot(string timeSlot)
+{
+    var parts = timeSlot.Split('-');
+    if (parts.Length == 2 &&
+        int.TryParse(parts[0], out int start) &&
+        int.TryParse(parts[1], out int end))
+    {
+        return (start, end);
+    }
+    return (0, 0);
+}
+}
