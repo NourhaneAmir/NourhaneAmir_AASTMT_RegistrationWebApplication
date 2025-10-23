@@ -306,36 +306,6 @@ namespace WebAPI.Data
                     CreditHours = 3,
                     College = "Engineering",
                     Level = 200
-                }, 
-                new Course
-                {
-                    CourseId = 11,
-                    DepartmentCode = "CS",
-                    CourseNumber = 105,
-                    CourseName = "Introduction to Web Development",
-                    CreditHours = 3,
-                    College = "Engineering",
-                    Level = 100
-                },
-                new Course
-                {
-                    CourseId = 12,
-                    DepartmentCode = "CS",
-                    CourseNumber = 107,
-                    CourseName = "Introduction to Probability",
-                    CreditHours = 2,
-                    College = "Engineering",
-                    Level = 100
-                },
-                new Course
-                {
-                    CourseId = 13,
-                    DepartmentCode = "CS",
-                    CourseNumber = 205,
-                    CourseName = "Software Engineering Theory",
-                    CreditHours = 2,
-                    College = "Engineering",
-                    Level = 200
                 }
             );
 
@@ -615,90 +585,6 @@ namespace WebAPI.Data
                     Capacity = 30,
                     EnrolledCount = 29,
                     DaysOfWeek = "U",
-                    StartTime = new TimeSpan(10, 0, 0),
-                    EndTime = new TimeSpan(12, 0, 0),
-                    Classroom = "ENG-301"
-                },
-
-                //course 11
-                new Class
-                {
-                    ClassId = 21,
-                    CourseId = 11,
-                    InstructorId = 3,
-                    ClassSection = "A",
-                    Capacity = 40,
-                    EnrolledCount = 39,
-                    DaysOfWeek = "W",
-                    StartTime = new TimeSpan(10, 0, 0),
-                    EndTime = new TimeSpan(12, 0, 0),
-                    Classroom = "ENG-301"
-                },
-                new Class
-                {
-                    ClassId = 22,
-                    CourseId = 11,
-                    InstructorId = 2,
-                    ClassSection = "B",
-                    Capacity = 30,
-                    EnrolledCount = 28,
-                    DaysOfWeek = "M",
-                    StartTime = new TimeSpan(14, 0, 0),
-                    EndTime = new TimeSpan(16, 0, 0),
-                    Classroom = "ENG-301"
-                },
-
-                //course 12
-                new Class
-                {
-                    ClassId = 23,
-                    CourseId = 12,
-                    InstructorId = 2,
-                    ClassSection = "A",
-                    Capacity = 30,
-                    EnrolledCount = 18,
-                    DaysOfWeek = "U",
-                    StartTime = new TimeSpan(14, 0, 0),
-                    EndTime = new TimeSpan(16, 0, 0),
-                    Classroom = "ENG-301"
-                },
-                new Class
-                {
-                    ClassId = 24,
-                    CourseId = 12,
-                    InstructorId = 3,
-                    ClassSection = "B",
-                    Capacity = 30,
-                    EnrolledCount = 18,
-                    DaysOfWeek = "H",
-                    StartTime = new TimeSpan(14, 0, 0),
-                    EndTime = new TimeSpan(16, 0, 0),
-                    Classroom = "ENG-301"
-                },
-
-                //course 13
-                new Class
-                {
-                    ClassId = 25,
-                    CourseId = 13,
-                    InstructorId = 4,
-                    ClassSection = "A",
-                    Capacity = 30,
-                    EnrolledCount = 25,
-                    DaysOfWeek = "T",
-                    StartTime = new TimeSpan(12, 0, 0),
-                    EndTime = new TimeSpan(14, 0, 0),
-                    Classroom = "ENG-301"
-                },
-                new Class
-                {
-                    ClassId = 26,
-                    CourseId = 13,
-                    InstructorId = 5,
-                    ClassSection = "B",
-                    Capacity = 30,
-                    EnrolledCount = 20,
-                    DaysOfWeek = "S",
                     StartTime = new TimeSpan(10, 0, 0),
                     EndTime = new TimeSpan(12, 0, 0),
                     Classroom = "ENG-301"

@@ -6,7 +6,6 @@
 @inject ToastService ToastService
 
 <div class="max-w-7xl mx-auto space-y-6">
-    <!-- Header -->
     <div class="bg-white rounded-xl p-6 shadow-lg">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-3xl font-bold text-gray-900">Course Registration</h2>
@@ -19,7 +18,6 @@
             </button>
         </div>
 
-        <!-- Registration Info -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div class="bg-blue-50 p-3 rounded-lg">
                 <span class="font-semibold text-blue-800">Student:</span> @AuthState.CurrentStudent?.FullName
@@ -250,7 +248,7 @@
         {
             isLoadingClasses = true;
             availableClasses = await CourseService.GetAvailableClassesByCourseAsync(courseId);
-            selectedClassId = 0; // Reset class selection
+            selectedClassId = 0; 
         }
         catch (Exception ex)
         {
@@ -309,11 +307,9 @@
             {
                 ToastService.ShowSuccess("Course added successfully!");
                 
-                // Refresh data
                 await LoadRegisteredClasses();
-                await LoadAvailableCourses(); // Refresh in case capacity changed
+                await LoadAvailableCourses(); 
                 
-                // Reset selections
                 selectedCourseId = 0;
                 selectedClassId = 0;
                 availableClasses = null;
@@ -348,13 +344,12 @@
             {
                 ToastService.ShowSuccess("Course dropped successfully!");
                 
-                // Refresh data
                 await LoadRegisteredClasses();
-                await LoadAvailableCourses(); // Refresh available courses
+                await LoadAvailableCourses(); 
                 
                 if (selectedCourseId > 0)
                 {
-                    await LoadAvailableClasses(selectedCourseId); // Refresh available classes
+                    await LoadAvailableClasses(selectedCourseId); 
                 }
             }
             else
@@ -378,7 +373,7 @@
     {
         var days = classItem.DaysOfWeek;
         var time = $"{classItem.StartTime:hh\\:mm} - {classItem.EndTime:hh\\:mm}";
-        var seats = $"{classItem.RemainingSeats}/{classItem.Capacity} seats";
+        var seats = $"RemainingSeats: {classItem.RemainingSeats} seats";
         var instructor = classItem.Instructor?.InstructorName.Split(' ')[0] ?? "Staff";
         
         return $"{days} {time} ({seats}) - {instructor}";

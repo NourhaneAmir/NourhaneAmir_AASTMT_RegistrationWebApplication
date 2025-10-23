@@ -1,5 +1,6 @@
 ﻿using StudentRegistration.Shared.Models;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace BlazorApp.Services
 {
@@ -49,15 +50,28 @@ namespace BlazorApp.Services
                 ClassId = classId
             });
 
-            if (response.IsSuccessStatusCode)
+            var result = await response.Content.ReadFromJsonAsync<RegistrationResult>();
+
+            if (result != null)
             {
-                return await response.Content.ReadFromJsonAsync<RegistrationResult>() ?? new RegistrationResult();
+                if (!result.Success && result.Errors?.Count > 0)
+                {
+                    foreach (var error in result.Errors)
+                        Console.WriteLine($"Error: {error}");
+                    result.Message = result.Errors[0];
+                }
+                
+                return result;
             }
-            else
+
+            return new RegistrationResult
             {
-                return new RegistrationResult { Success = false, Message = "Registration failed" };
-            }
+                Success = false,
+                Message = "Registration failed: unexpected response format"
+            };
         }
+
+
 
         public async Task<RegistrationResult> DropClassAsync(int registrationNumber, int classId)
         {

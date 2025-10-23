@@ -39,7 +39,7 @@ namespace StudentRegistration.Shared.Models
         public bool IsRegistrationOpen()
         {
             //test: new DateTime(2025, 11, 21);
-            var now = DateTime.Now;
+            var now = new DateTime(2025, 11, 21);
             return now >= RegistrationStart && now <= RegistrationEnd;
         }
 
